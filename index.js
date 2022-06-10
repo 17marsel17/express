@@ -1,43 +1,32 @@
 import express from 'express';
-import { v4 as uuid} from 'uuid';
+import {PORT} from './config.js'
+import {Book} from './book.js'
 
-class Book {
-    constructor(title = '', desc = '', authors = '', favorite = '', fileCover = '', fileName = '', id = uuid()) {
-        this.title = title;
-        this.desc = desc;
-        this.authors = authors;
-        this.favorite = favorite;
-        this.fileCover = fileCover;
-        this.fileName = fileName;
-        this.id = id;
-    }
-}
-
-const stor = {
-    book: [
-        new Book(),
-    ],
+const store = {
+    books: [],
 };
 
 const app = express();
 app.use(express.json());
 
 app.get('/api/books', (req, res) => {
-    const {book} = stor;
-    res.json(book);
+    const {books} = store;
+    res.json(books);
 });
 
 app.get('/api/books/:id', (req, res) => {
-    const {book} = stor;
+    const {books} = store;
     const {id} = req.params;
-    const idx = book.findIndex(el => el.id === id);
+    const book = books.find(el => el.id === id);
 
-    if (idx !== -1) {
-        res.json(book[idx]);
-    } else {
+    if (!book) {
         res.status(404).type('text/plain');
         res.json('404 | страница не найдена');
+
+        return;
     }
+
+    res.json(book);
 });
 
 app.post('/api/user/login', (req, res) => {
@@ -51,25 +40,25 @@ app.post('/api/user/login', (req, res) => {
 });
 
 app.post('/api/books', (req, res) => {
-    const {book} = stor;
+    const {books} = store;
     const {title, desc, authors, favority, fileCover, fileName} = req.body;
 
     const newBook = new Book(title, desc, authors, favority, fileCover, fileName);
-    book.push(newBook);
+    books.push(newBook);
 
     res.status(201);
     res.json(newBook);
 })
 
 app.put('/api/books/:id', (req, res) => {
-    const {book} = stor;
+    const {books} = store;
     const {title, desc, authors, favorite, fileCover, fileName} = req.body;
     const {id} = req.params;
-    const idx = book.findIndex(el => el.id === id);
+    const idx = books.findIndex(el => el.id === id);
 
     if (idx !== -1){
-        book[idx] = {
-            ...book[idx],
+        books[idx] = {
+            ...books[idx],
             title,
             desc,
             authors,
@@ -78,26 +67,26 @@ app.put('/api/books/:id', (req, res) => {
             fileName
         };
 
-        res.json(book[idx]);
-    } else {
-        res.status(404);
-        res.json('404 | страница не найдена');
-    }
-})
-
-app.delete('/api/books/:id', (req, res) => {
-    const {book} = stor;
-    const {id} = req.params;
-    const idx = book.findIndex(el => el.id === id);
-
-    if (idx !== -1) {
-        book.splice(idx, 1);
-        res.json('ok');
+        res.json(books[idx]);
     } else {
         res.status(404);
         res.json('404 | страница не найдена');
     }
 });
 
-const PORT = process.env.PORT || 3000;
+app.delete('/api/books/:id', (req, res) => {
+    const {books} = store;
+    const {id} = req.params;
+    const idx = books.findIndex(el => el.id === id);
+
+    if (idx === -1) {
+        res.status(404);
+        res.json('404 | страница не найдена');
+        return;
+    }
+
+    books.splice(idx, 1);
+     res.json('ok');
+});
+
 app.listen(PORT);
